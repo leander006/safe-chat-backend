@@ -4,6 +4,14 @@ const Conversation = require('../model/Conversation')
 const asyncHandler = require('express-async-handler')
 
 
+router.get('/',asyncHandler(async(req,res) =>{
+   try {
+      let user = await User.find();
+      res.send(200).json(user);
+   } catch (error) {
+      res.status(500).json(error.message)
+   }
+}));
 
 router.delete("/delete",asyncHandler(async(req,res) =>{
    const {userId} = req.body;

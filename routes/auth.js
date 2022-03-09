@@ -5,6 +5,9 @@ const generateToken = require('../config/authToken')
 const asyncHandler = require('express-async-handler')
 const { body, validationResult } = require('express-validator');
 
+
+
+
 router.post('/register',[
     body('email','Enter valid email').isEmail(),
     body('username','Name must be atleast 5 characters').isLength({ min: 5 }),
@@ -15,8 +18,13 @@ router.post('/register',[
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    const {username, email,password,profilePic} = req.body;
-    console.log(username + email + password);
+    const {username, email,password} = req.body;
+
+    const localPath = `public/images/profile/${req.file.filename}`;
+
+	const uploadedImg = await cloudinaryUploadImage(localPath);
+
+    
 
     if(!username|| !password || !email){
        return res.status(401).json("Enter all credentails")
@@ -41,7 +49,8 @@ router.post('/register',[
             username,
             email,
             password:hashPassword,
-            profilePic,
+            // profilePic:uploadedImg.secure_url,
+            // cloudinaryId:uploadedImg.public_id,
         })
         const user = await newuser.save();
         res.status(200).json({
@@ -63,6 +72,7 @@ router.post('/login',[
       return res.status(400).json({ errors: errors.array() });
     }
     const {username,password} = req.body;
+    console.log(username + password);
     if(!username|| !password)
         {
             return res.status(401).json("Enter correct credentails");

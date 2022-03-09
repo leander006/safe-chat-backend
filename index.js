@@ -2,14 +2,23 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const {protect} = require('./middleware/authMiddleware')
-const videoRoute = require('./routes/video');
+
 const authRoute = require('./routes/auth');
 const userRoute = require('./routes/user');
 const conversationRoute = require('./routes/conversation');
 const messageRoute = require('./routes/message');
-const enrollRoute = require('./routes/enrollment')
+const review = require('./routes/review')
 const app = express();
+
+
 const cors = require('cors')
+
+const io = require('socket.io')(8900,{
+  cors:{
+    origin:"http://localhost:3000",
+  }
+});
+
 
 
 dotenv.config();
@@ -22,14 +31,64 @@ app.use("/api/auth",authRoute);
 app.use("/api/user",protect,userRoute)
 app.use("/api/conversation",protect,conversationRoute)
 app.use("/api/message",messageRoute)
-app.use("/api/enrollment",protect,enrollRoute)
-app.use("/api/upload",protect,videoRoute)
 
 app.get('/',(req,res)=>{
     res.send("hello from gym app");
   })
 
 
+
+  
+let users =[];
+const removeUser = (socketId) =>{
+  users=users.filter((user) =>user.socketId !== socketId);
+}
+const addUser = (userId,socketId) =>{
+  console.log(userId);
+  !users.some(user=>user.userId === userId) &&
+  users.push({userId,socketId});
+}
+//---to get particular receiver for one on one chat--//
+const getUser = (userId)=>{
+  return users.find((user)=>user.userId === userId);
+}
+//----------------------------------------------------//
+
+io.on("connection",(socket) =>{
+  console.log("a user connected");
+  //----------add user to socket---//
+ 
+  socket.on("addUser" ,userId=>{
+    addUser(userId,socket.id);
+  
+    io.emit('getUser',users);
+  })
+  //------------send messsage ---------//
+
+  socket.on("sendMessage",({senderId,text})=>{
+  console.log(senderId +'  ' + text);
+    io.emit("getMessage",{
+      senderId,
+      text,
+    })  
+  })
+
+
+//--------disconntect socket-----//
+// socket.on("disconnect",()=>{
+//   console.log("user disconnected");
+//   removeUser(socketId)
+//   io.emit('getUser',users);
+// })
+
+})
+
+
+
+// io.off("setUp",() =>{
+//   console.log("User Disconnted");
+//   socket.leave(userData_id)
+// })
 app.listen(process.env.PORT || 4000,()=>{
 console.log("backend runnig on port 4000");
 })

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { body, validationResult } = require('express-validator');
-const Enroll = require('../model/Enrollment')
+const Enroll = require('../model/Review')
 const asyncHandler = require('express-async-handler')
 
 

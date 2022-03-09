@@ -15,10 +15,6 @@ const UserSchema = new mongoose.Schema({
         type:String,
         require:true,
     },
-    profilePic:{
-        type:String,
-        default:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTu9zuWJ0xU19Mgk0dNFnl2KIc8E9Ch0zhfCg&usqp=CAU",
-    },
     admin:{
         type:String,
         default:false,
