@@ -5,24 +5,25 @@ const Conversation = require('../model/Conversation');
 
 
 router.post('/',asyncHandler(async(req,res)=>{
-    const {sender, text} = req.body;
+    const {text} = req.body;
     const userID= process.env.CONVERSATION_ID
+    // console.log(req.user._id);
     var member=[];
     const conversationId = await Conversation.findById(userID);
   
-    const userFind= await Conversation.find({members:{$in:sender}})
+    const userFind= await Conversation.find({members:{$in:req.user._id}})
     member=conversationId.members;
    
     const newmessage = new Message({
         conversationId:process.env.CONVERSATION_ID,
-        sender,
+        sender:req.user._id,
         text,
     })
     if(userFind.length===0)
     {
         try {
           await Conversation.findByIdAndUpdate(userID,{
-                members:[...member,sender]
+                members:[...member,req.user._id]
             },{new:true});
             const savedMessage = await newmessage.save();
         return res.status(200).json(savedMessage)
@@ -48,7 +49,6 @@ router.get('/',asyncHandler(async(req,res) =>{
 
     try {
         const conversations = await Message.find({})
-        .populate("sender","-password")
         .populate("text");
         
         return res.status(200).json(conversations);

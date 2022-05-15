@@ -6,7 +6,7 @@ const asyncHandler = require('express-async-handler')
 router.post("/",asyncHandler(async(req,res) =>{
     
     const conversation = new Conversation({
-        members:[req.body.userId]
+        members:[req.user._id]
     })
 try {
     const savedConversation = await conversation.save();

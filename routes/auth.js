@@ -20,12 +20,6 @@ router.post('/register',[
     }
     const {username, email,password} = req.body;
 
-    const localPath = `public/images/profile/${req.file.filename}`;
-
-	const uploadedImg = await cloudinaryUploadImage(localPath);
-
-    
-
     if(!username|| !password || !email){
        return res.status(401).json("Enter all credentails")
     }
@@ -49,8 +43,6 @@ router.post('/register',[
             username,
             email,
             password:hashPassword,
-            // profilePic:uploadedImg.secure_url,
-            // cloudinaryId:uploadedImg.public_id,
         })
         const user = await newuser.save();
         res.status(200).json({
