@@ -25,7 +25,7 @@ dotenv.config();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI).then(console.log("Connected to mongodb")).catch((err)=>{console.log(err)})
+mongoose.connect(process.env.MONGO_URI).then(console.log("Connected to mongodb")).catch((err)=>{console.log("invalid",err)})
 
 app.use("/api/auth",authRoute);
 app.use("/api/user",protect,userRoute)

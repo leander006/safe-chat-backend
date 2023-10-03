@@ -7,11 +7,12 @@ const Conversation = require('../model/Conversation');
 router.post('/',asyncHandler(async(req,res)=>{
     const {text} = req.body;
     const userID= process.env.CONVERSATION_ID
-    // console.log(req.user._id);
+    // console.log(userID);
     var member=[];
     const conversationId = await Conversation.findById(userID);
   
     const userFind= await Conversation.find({members:{$in:req.user._id}})
+    // console.log(conversationId);
     member=conversationId.members;
    
     const newmessage = new Message({
