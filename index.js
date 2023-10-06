@@ -1,91 +1,107 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const {protect} = require('./middleware/authMiddleware')
+const express = require("express");
+const mongoose = require("mongoose");
+const socket = require("socket.io");
+const authRoute = require("./routes/auth-route");
+const userRoute = require("./routes/user-route");
+const conversationRoute = require("./routes/conversation");
+const roomRoute = require("./routes/room-route");
 
-const authRoute = require('./routes/auth');
-const userRoute = require('./routes/user');
-const conversationRoute = require('./routes/conversation');
-const messageRoute = require('./routes/message');
+const passport = require("passport");
+const cors = require("cors");
+const session = require("cookie-session");
 
 const app = express();
 
+const { MONGO_URI, PORT, JWT_KEY } = require("./config/serverConfig");
+const { passportAuth } = require("./config/jwt");
 
-const cors = require('cors')
-
-const io = require('socket.io')(8900,{
-  cors:{
-    origin:"http://localhost:3000",
-  }
-});
-
-
-
-dotenv.config();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI).then(console.log("Connected to mongodb")).catch((err)=>{console.log("invalid",err)})
-
-app.use("/api/auth",authRoute);
-app.use("/api/user",protect,userRoute)
-app.use("/api/conversation",protect,conversationRoute)
-app.use("/api/message",protect,messageRoute)
-
-app.get('/',(req,res)=>{
-    res.send("hello from gym app");
+app.set("trust proxy", 1);
+mongoose.set("strictQuery", false);
+mongoose
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
   })
+  .then(console.log("Connected to mongodb"))
+  .catch((err) => {
+    console.log("invalid", err);
+  });
 
-
-
-  
-let users =[];
-const removeUser = (socketId) =>{
-  users=users.filter((user) =>user.socketId !== socketId);
-}
-const addUser = (userId,socketId) =>{
-
-  !users.some(user=>user.userId === userId) &&
-  users.push({userId,socketId});
-}
-//---to get particular receiver for one on one chat--//
-const getUser = (userId)=>{
-  return users.find((user)=>user.userId === userId);
-}
-//----------------------------------------------------//
-
-io.on("connection",(socket) =>{
-  // console.log("a user connected");
-  //----------add user to socket---//
- 
-  socket.on("addUser" ,userId=>{
-    addUser(userId,socket.id);
-  
-    io.emit('getUser',users);
+app.use(
+  cors({
+    origin: ["http://localhost:3000"],
+    methods: ["GET", "POST", "DELETE", "PUT"],
+    credentials: true,
   })
-  //------------send messsage ---------//
+);
 
-  socket.on("sendMessage",({senderId,text})=>{
-  
-    io.emit("getMessage",{
-      senderId,
-      text,
-    })  
+app.use(
+  session({
+    secret: `${JWT_KEY}`,
+    resave: false,
+    saveUninitialized: true,
   })
+);
 
+app.use(passport.initialize());
+app.use(passport.session());
+passportAuth(passport);
 
-//--------disconntect socket-----//
-socket.on("disconnect",(socketId)=>{
-  // console.log("user disconnected");
-  removeUser(socketId)
-  io.emit('getUser',users);
-})
+passport.serializeUser(function (user, cb) {
+  cb(null, user);
+});
+passport.deserializeUser(function (obj, cb) {
+  cb(null, obj);
+});
 
-})
+app.use("/api/auth", authRoute);
+app.use("/api/user", userRoute);
+app.use("/api/conversation", conversationRoute);
+app.use("/api/room", roomRoute);
 
+app.get("/", (req, res) => {
+  res.send("hello from video chatting app");
+});
+const server = app.listen(PORT, () => {
+  console.log(`backend runnig on port ${PORT}`);
+});
 
+const io = socket(server, { cors: true });
+io.on("connection", (socket) => {
+  socket.on("room:create", (data) => {
+    console.log("room:create", data.user.username, "joined room ", data.roomId);
+    socket.join(data.roomId);
+    io.to(socket.id).emit("room:create", { data });
+  });
 
+  socket.on("room:join", (data) => {
+    console.log("room:join", data.user.username, "joined room ", data.roomId);
+    io.to(data.roomId).emit("user:joined", {
+      user: data.user.username,
+      id: socket.id,
+    });
+    socket.join(data.roomId);
+    io.to(socket.id).emit("room:join", { data });
+  });
 
-app.listen(process.env.PORT || 4000,()=>{
-console.log("backend runnig on port 4000");
-})
+  socket.on("user:call", ({ to, offer }) => {
+    io.to(to).emit("incomming:call", { from: socket.id, offer });
+  });
+
+  socket.on("call:accepted", ({ to, ans }) => {
+    io.to(to).emit("call:accepted", { from: socket.id, ans });
+  });
+
+  socket.on("peer:nego:needed", ({ to, offer }) => {
+    // console.log("peer:nego:needed", offer);
+    io.to(to).emit("peer:nego:needed", { from: socket.id, offer });
+  });
+
+  socket.on("peer:nego:done", ({ to, ans }) => {
+    // console.log("peer:nego:done", ans);
+    io.to(to).emit("peer:nego:final", { from: socket.id, ans });
+  });
+});
