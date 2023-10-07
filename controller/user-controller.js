@@ -2,10 +2,24 @@ const Token = require("../model/Token");
 const User = require("../model/User");
 const asyncHandler = require("express-async-handler");
 
+// const allUser = asyncHandler(async (req, res) => {
+//   try {
+//     const allUsers = await User.find({ _id: { $ne: req.user._id } });
+//     return res.status(200).json(allUsers);
+//   } catch (error) {
+//     return res.status(500).send({ error: error.message });
+//   }
+// });
 const allUser = asyncHandler(async (req, res) => {
+  const name = req.query.name;
   try {
-    const allUsers = await User.find({ _id: { $ne: req.user._id } });
-    return res.status(200).json(allUsers);
+    const users = name
+      ? await User.find({
+          _id: { $ne: req.user._id },
+          username: { $regex: name, $options: "i" },
+        })
+      : await User.find({ _id: { $ne: req.user._id } });
+    return res.status(200).json(users);
   } catch (error) {
     return res.status(500).send({ error: error.message });
   }

@@ -68,9 +68,13 @@ app.get("/", (req, res) => {
 const server = app.listen(PORT, () => {
   console.log(`backend runnig on port ${PORT}`);
 });
-
+const users = new Map();
 const io = socket(server, { cors: true });
 io.on("connection", (socket) => {
+  socket.on("join-socket", ({ userId }) => {
+    users.set(userId, socket.id);
+    console.log(`${userId} joined socket connection ${users.size}`);
+  });
   socket.on("room:create", (data) => {
     console.log("room:create", data.user.username, "joined room ", data.roomId);
     socket.join(data.roomId);
@@ -103,5 +107,15 @@ io.on("connection", (socket) => {
   socket.on("peer:nego:done", ({ to, ans }) => {
     // console.log("peer:nego:done", ans);
     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
+  });
+  socket.on("send-notification", ({ userId, sender }) => {
+    console.log("send-notification", userId?.username);
+    const user = users.get(userId?._id);
+    io.to(user).emit("got-notification", sender);
+  });
+
+  socket.on("leave-socket", function ({ userId }) {
+    users.delete(userId);
+    console.log("a user " + userId + " disconnected", users.size);
   });
 });

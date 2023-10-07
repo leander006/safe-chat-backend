@@ -34,8 +34,8 @@ const registration = asyncHandler(async (req, res) => {
       email: email,
       password: hashedPassword,
       profile: {
-        public_id: "mp9mhqngt4ulnnkb6ssu",
-        url: "http://res.cloudinary.com/dj-sanghvi-college/image/upload/v1694360265/mp9mhqngt4ulnnkb6ssu.png",
+        public_id: "ozaztnwvllrpmuu4oa1o",
+        url: "http://res.cloudinary.com/dj-sanghvi-college/image/upload/v1696659143/ozaztnwvllrpmuu4oa1o.jpg",
       },
     });
 
