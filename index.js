@@ -82,9 +82,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("room:join", (data) => {
-    console.log("room:join", data.user.username, "joined room ", data.roomId);
+    // console.log("room:join", data.user.username, "joined room ", data.roomId);
     io.to(data.roomId).emit("user:joined", {
-      user: data.user.username,
+      user: data.user,
       id: socket.id,
     });
     socket.join(data.roomId);
@@ -117,5 +117,11 @@ io.on("connection", (socket) => {
   socket.on("leave-socket", function ({ userId }) {
     users.delete(userId);
     console.log("a user " + userId + " disconnected", users.size);
+  });
+
+  socket.on("send_message", (data) => {
+    console.log("messageRecieved", data);
+    const to = users.get(data.sender._id);
+    io.to(to).emit("message recieved", data);
   });
 });
