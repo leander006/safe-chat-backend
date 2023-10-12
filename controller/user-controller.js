@@ -21,7 +21,7 @@ const allUser = asyncHandler(async (req, res) => {
       : await User.find({ _id: { $ne: req.user._id } });
     return res.status(200).json(users);
   } catch (error) {
-    return res.status(500).send({ error: error.message });
+    return res.status(500).send({ error: error });
   }
 });
 
