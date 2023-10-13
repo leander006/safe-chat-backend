@@ -63,7 +63,6 @@ const login = asyncHandler(async (req, res) => {
       return res.status(402).send({ message: "Please all field" });
     }
     const user = await User.findOne({ username });
-    // console.log("user ", user);
     if (!user) {
       return res.status(400).send({ message: "User does not exits!" });
     }

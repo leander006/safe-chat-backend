@@ -7,7 +7,6 @@ const {
   GOOGLE_CALLBACK_URL,
   GOOGLE_CLIENT_SECRET,
   GOOGLE_CLIENT_ID,
-  CLIENT_URL,
   BASE_URL,
 } = require("../config/serverConfig");
 
@@ -47,7 +46,7 @@ router.get("/success", async (req, res) => {
   const user = await googleAuth.registerWithGoogle(userProfile);
   const { password, ...others } = user._doc;
   const token = user.genJWT();
-  res.redirect(`${CLIENT_URL}?token=${token}&data=${JSON.stringify(others)}`);
+  res.redirect(`${BASE_URL}?token=${token}&data=${JSON.stringify(others)}`);
 });
 
 router.get("/error", (req, res) => res.send("Error logging in via Google.."));
