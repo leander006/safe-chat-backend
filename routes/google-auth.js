@@ -1,7 +1,7 @@
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth").OAuth2Strategy;
 const express = require("express");
-const googleAuth = require("../controllers/google-authController");
+const googleAuth = require("../controller/google-controller");
 const router = express.Router();
 const {
   GOOGLE_CALLBACK_URL,

@@ -5,6 +5,7 @@ const authRoute = require("./routes/auth-route");
 const userRoute = require("./routes/user-route");
 const conversationRoute = require("./routes/conversation");
 const roomRoute = require("./routes/room-route");
+const googleRoute = require("./routes/google-auth");
 
 const passport = require("passport");
 const cors = require("cors");
@@ -12,11 +13,12 @@ const session = require("cookie-session");
 
 const app = express();
 
-const { MONGO_URI, PORT, JWT_KEY } = require("./config/serverConfig");
+const { MONGO_URI, PORT, JWT_KEY, URL } = require("./config/serverConfig");
 const { passportAuth } = require("./config/jwt");
 
 app.use(cors());
-app.use(express.json());
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "50mb" }));
 
 app.set("trust proxy", 1);
 mongoose.set("strictQuery", false);
@@ -32,7 +34,7 @@ mongoose
 
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
+    origin: [URL, "http://localhost:3000"],
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   })
@@ -58,6 +60,7 @@ passport.deserializeUser(function (obj, cb) {
 });
 
 app.use("/api/auth", authRoute);
+app.use("/api/auth/google", googleRoute);
 app.use("/api/user", userRoute);
 app.use("/api/conversation", conversationRoute);
 app.use("/api/room", roomRoute);
@@ -120,5 +123,10 @@ io.on("connection", (socket) => {
     message.push(data);
     console.log("message", message);
     socket.to(data.roomId).emit("message_recieved", message);
+  });
+
+  socket.on("room_delete", (data) => {
+    console.log("delete room");
+    socket.to(data.roomId).emit("delete_room", data);
   });
 });
