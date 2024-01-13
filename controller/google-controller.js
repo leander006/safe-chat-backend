@@ -21,7 +21,7 @@ const googleAuthDal = {
       status: "Public",
       profile: {
         public_id: "siyz73iq0sau89vqebhm",
-        url: "http://res.cloudinary.com/dj-sanghvi-college/image/upload/v1697165762/siyz73iq0sau89vqebhm.jpg",
+        url: "https://res.cloudinary.com/dj-sanghvi-college/image/upload/v1697996657/noProfile_jjyqlm.jpg",
       },
       isVerified: JSON.parse(oauthUser._raw).email_verified,
     });
