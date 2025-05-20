@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon backend/index.js"
+    "start": "node dist/index.js",
+    "build": "tsc --b"
   },
   "author": "leander",
   "license": "ISC",
@@ -28,7 +29,10 @@
     "passport-jwt": "^4.0.1",
     "path": "^0.12.7",
     "sharp": "^0.30.2",
-    "socket.io": "^4.4.1",
-    "soket.io": "^0.0.1-security"
+    "socket.io": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "typescript": "^5.8.3"
   }
 }
