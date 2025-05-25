@@ -1,7 +1,9 @@
 const passport = require("passport");
 
-const authenticate = (req, res, next) => {
-  passport.authenticate("jwt", (error, user, data) => {
+import { Request, Response, NextFunction } from "express";
+
+const authenticate = (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate("jwt", (error: unknown, user: any, data: any) => {
     if (error) next(error);
     if (!user) {
       return res.status(404).json({

@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/config/authtoken.ts","./src/config/authenticate.ts","./src/config/jwt.ts","./src/config/prisma.ts","./src/config/serverconfig.ts","./src/controllers/google-controller.ts","./src/routes/google-auth.ts"],"version":"5.8.3"}
