@@ -1,17 +1,59 @@
-import express, { json } from 'express';
+import express from 'express';
 import { Server } from 'socket.io';
-
+import { JWT_KEY, PORT } from './config/serverConfig';
+import googleAuthRoute from './routes/google-auth';
+import passport from 'passport';
+import { passportAuth } from './config/jwt';
+import session from "express-session";
+import cors from 'cors'
 const app = express();
 const allusers: { [key: string]: { username: string; id: string }[] } = {};
+
+app.use(
+    cors({
+      origin: ["http://localhost:3000"],
+      methods: ["GET", "POST", "DELETE", "PUT"],
+      credentials: true,
+    })
+  );
+
+app.use(
+    session({
+      secret: JWT_KEY || 'default_secret_key', 
+      resave: false, // Avoid saving session if not modified
+      saveUninitialized: false, // Avoid creating session until something is stored
+      cookie: {
+        secure: process.env.NODE_ENV === "production", // Use HTTPS in production
+        maxAge: 1000 * 60 * 60 * 24, // 1 day
+      },
+    })
+  );
+
+app.use(passport.initialize());
+app.use(passport.session());
+passportAuth(passport);
+
+passport.serializeUser(function (user, cb) {
+  cb(null, user);
+});
+
+passport.deserializeUser(function (obj, cb) {
+// @ts-ignore
+  cb(null, obj);
+});
+
 const userIdToSocket = new Map();
+
 app.get('/', (req, res) => {
     res.send('Hello World!');
-  });
+});
   
-const server = app.listen(3001, () => {    
+const server = app.listen(PORT, () => {    
       console.log('Server is running on port 3001');
 })
-  
+
+app.use("/api/auth/google",googleAuthRoute)
+
 const io = new Server(server, { 
     cors: { 
         origin: '*', 
@@ -25,6 +67,9 @@ io.on('connection', (socket) => {
     socket.on('join-room', ({username,roomId}) => {
         if(!allusers[roomId]) {
             allusers[roomId] = [];
+        }
+        if(allusers[roomId].length >= 2) {
+            return socket.emit('room-full', { message: 'Room is full' });
         }
         if(!allusers[roomId].find(user => user.username === username)) {
             allusers[roomId].push({username, id: socket.id });
