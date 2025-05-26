@@ -63,7 +63,6 @@ const io = new Server(server, {
 
 
 io.on('connection', (socket) => {
-    console.log('A user connected ',socket.id);
     socket.on('join-room', ({username,roomId}) => {
         if(!allusers[roomId]) {
             allusers[roomId] = [];
@@ -75,6 +74,7 @@ io.on('connection', (socket) => {
             allusers[roomId].push({username, id: socket.id });
             userIdToSocket.set(socket.id, roomId);
         }
+        console.log(`User ${username} joined room: ${roomId}`, allusers[roomId]);
         socket.join(roomId);
         for(const user of allusers[roomId]) {
             if(user.username !== username) {
@@ -101,7 +101,7 @@ io.on('connection', (socket) => {
     socket.on('user:leave', ({username,roomId}) => {
         const index = allusers[roomId].findIndex(user => user.username === username);
         const to = allusers[roomId].find(user => user.username !== username)?.id;
-        console.log(`User ${username} left room: ${roomId}`,to);
+        console.log(`User ${username} left room: ${roomId}`);
         
         if (index !== -1) {
             allusers[roomId].splice(index, 1);
@@ -121,6 +121,7 @@ io.on('connection', (socket) => {
             return
         }
         const username=allusers[roomId].find(user => user.id === socket.id)?.username;
+        console.log(`User ${username} left room: ${roomId}`);
         const to = allusers[roomId].find(user => user.username !== username)?.id;
         if (roomId && allusers[roomId]) {
             const index = allusers[roomId].findIndex(user => user.id === socket.id);
