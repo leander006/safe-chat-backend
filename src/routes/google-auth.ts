@@ -9,6 +9,7 @@ import {
   GOOGLE_CLIENT_ID,
   BASE_URL,
 } from "../config/serverConfig";
+import prismaClient from "../config/prisma";
 
 const router = express.Router();
 
@@ -54,7 +55,6 @@ router.get("/success", async (req: Request, res: Response) => {
   if (!userProfile) {
     return res.status(400).send("User profile not found.");
   }
-
   try {
     const transformedProfile = {
       id: userProfile.id,
@@ -64,23 +64,25 @@ router.get("/success", async (req: Request, res: Response) => {
       _raw: userProfile._raw,
     };
 
-    const user = await googleAuthDal.registerWithGoogle(transformedProfile); // Assuming `googleAuthDal` is imported correctly
+    const user = await googleAuthDal.registerWithGoogle(transformedProfile); 
     if (!user) {
       return res.status(500).send("User information is not available.");
     }
-    const token = generateToken(user.id); // Replace with a valid function to generate JWT
+
+    const token = generateToken(user.id); 
     res.cookie("authToken", token, {
-      secure: true,       // Ensure cookies are only sent over HTTPS
-      sameSite: "strict", // Prevent CSRF
-      maxAge: 24 * 60 * 60 * 1000, // 1 day expiration
+      secure: true,      
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, 
     });
     res.cookie("user", JSON.stringify(user), {
-      secure: true,       // Ensure cookies are only sent over HTTPS
-      sameSite: "strict", // Prevent CSRF
-      maxAge: 24 * 60 * 60 * 1000, // 1 day expiration
+      secure: true,       
+      sameSite: "strict", 
+      maxAge: 24 * 60 * 60 * 1000, 
     });
     res.redirect(`${BASE_URL}`);
   } catch (error) {
+    console.log("Error processing user information:", error);
     res.status(500).send("Error processing user information.");
   }
 });

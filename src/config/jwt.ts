@@ -19,10 +19,9 @@ export const passportAuth = async (passport: PassportStatic) => {
     new JwtStrategy(opts, async (jwt_payload: { id: string }, done: (error: any, user?: any) => void) => {
       const user = await prismaClient.user.findUnique({
         where: {
-          id: parseInt(jwt_payload.id, 10),
+          id: jwt_payload.id,
         },
       });
-      // const user = await User.findById(jwt_payload.id);
       if (!user) {
         return done(null, false);
       } else {

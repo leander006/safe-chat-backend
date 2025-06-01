@@ -14,16 +14,14 @@ datasource db {
 }
 
 model User {
-  id         Int     @id @default(autoincrement())
+  id         String     @id
   accountId  String  @unique
   username   String
-  name       String
   provider   String
   email      String  @unique
   status     String  @default("Public")
-  profile    Json
+  profile    String
   isVerified Boolean
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
 }

@@ -2,16 +2,20 @@ import express from 'express';
 import { Server } from 'socket.io';
 import { JWT_KEY, PORT } from './config/serverConfig';
 import googleAuthRoute from './routes/google-auth';
+import userRoute from './routes/user-route';
 import passport from 'passport';
 import { passportAuth } from './config/jwt';
 import session from "express-session";
 import cors from 'cors'
 const app = express();
 const allusers: { [key: string]: { username: string; id: string }[] } = {};
+let users: any[] = [];
+const roomIdToSocket = new Map();
+let onlineUsers: Set<string> = new Set();
 
 app.use(
     cors({
-      origin: ["http://localhost:3000"],
+      origin: ["http://localhost:5173"],
       methods: ["GET", "POST", "DELETE", "PUT"],
       credentials: true,
     })
@@ -42,8 +46,6 @@ passport.deserializeUser(function (obj, cb) {
   cb(null, obj);
 });
 
-const userIdToSocket = new Map();
-
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
@@ -53,6 +55,8 @@ const server = app.listen(PORT, () => {
 })
 
 app.use("/api/auth/google",googleAuthRoute)
+app.use("/api/user",userRoute)
+
 
 const io = new Server(server, { 
     cors: { 
@@ -63,6 +67,56 @@ const io = new Server(server, {
 
 
 io.on('connection', (socket) => {
+    console.log(`User connected: ${socket.id}`);
+
+    socket.on('user-disconnected', ({user}) => {
+        console.log("User disconnected: ",user.username);
+    })
+
+    socket.on('user-login',(user) =>{
+        console.log("User login event received:", user.username);
+        // console.log("users length before checking ",users.length);
+        if(!user) {
+            return
+        }
+        if (users.find(u => u.id === user.id)) {
+            users = users.filter(u => u.id !== user.id);
+        }
+        console.log("users length after checking ",users.length);
+        const newUser = { ...user, socketId: socket.id };
+        // console.log("User logged in: ",newUser);
+        socket.data.user = newUser;
+        users.push(newUser);
+        console.log("users length end ",users.length);
+        socket.broadcast.emit("updateUserList", users);
+    })
+
+    socket.on('get-update',(user) =>{
+        const updatedUsers = users.filter(u => u.id !== user.id);
+        // console.log("Getting updatedUser array", updatedUsers);
+        socket.emit("updateUserList", users);
+    })
+
+    socket.on('logout', (user) => {
+        console.log("User logout event received:", user.username);
+        if(!user) {
+            return
+        }
+        users = users.filter(u => u.id !== user.id);
+        onlineUsers.delete(socket.id);
+        socket.broadcast.emit("updateUserList", users);
+    })
+
+    socket.on("audio-call",({from ,to, roomId}) => {    
+        console.log("Audio call ${to} in room ${roomId} ",to.socketId, roomId );
+        io.to(to.socketId).emit("incoming:audio", {from,roomId});
+    });
+
+    socket.on("video-call",({from ,to, roomId}) => {  
+        console.log("Video call ${to} in room ${roomId} ",to.socketId, roomId );
+        io.to(to.socketId).emit("incoming:video", {from,roomId});
+    });
+
     socket.on('join-room', ({username,roomId}) => {
         if(!allusers[roomId]) {
             allusers[roomId] = [];
@@ -72,9 +126,8 @@ io.on('connection', (socket) => {
         }
         if(!allusers[roomId].find(user => user.username === username)) {
             allusers[roomId].push({username, id: socket.id });
-            userIdToSocket.set(socket.id, roomId);
+            roomIdToSocket.set(socket.id, roomId);
         }
-        console.log(`User ${username} joined room: ${roomId}`, allusers[roomId]);
         socket.join(roomId);
         for(const user of allusers[roomId]) {
             if(user.username !== username) {
@@ -83,12 +136,10 @@ io.on('connection', (socket) => {
         }
     });
     socket.on('user:offer', ({to, offer}) => {
-        console.log(" user incoming call ");
         io.to(to).emit("incoming:offer", {from:socket.id, offer });
     })
 
     socket.on('user:answer', ({to, answer}) => {
-        console.log(" user answering call  ");
         io.to(to).emit("incoming:answer", {from:socket.id, answer});
     })
 
@@ -102,11 +153,10 @@ io.on('connection', (socket) => {
         const index = allusers[roomId].findIndex(user => user.username === username);
         const to = allusers[roomId].find(user => user.username !== username)?.id;
         console.log(`User ${username} left room: ${roomId}`);
-        
-        if (index !== -1) {
+       if (index !== -1) {
             allusers[roomId].splice(index, 1);
             socket.leave(roomId);
-            userIdToSocket.delete(socket.id);
+            roomIdToSocket.delete(socket.id);
             if (to) {
                 socket.to(to).emit('user-left', { username, id: socket.id });
             }
@@ -116,10 +166,15 @@ io.on('connection', (socket) => {
         }
     })
     socket.on('disconnect', () => {
-        const roomId = userIdToSocket.get(socket.id);
+        const users = socket.data.user
+        onlineUsers.delete(socket.id);
+        if (!users) {
+            return;
+        }
+        const roomId = roomIdToSocket.get(socket.id);
         if(!allusers[roomId]) {
             return
-        }
+        }        
         const username=allusers[roomId].find(user => user.id === socket.id)?.username;
         console.log(`User ${username} left room: ${roomId}`);
         const to = allusers[roomId].find(user => user.username !== username)?.id;
@@ -128,7 +183,7 @@ io.on('connection', (socket) => {
             if (index !== -1) {
                 allusers[roomId].splice(index, 1);
                 socket.leave(roomId);
-                userIdToSocket.delete(socket.id);
+                roomIdToSocket.delete(socket.id);
                 if (to) {
                     socket.to(to).emit('user-left', { username, id: socket.id });
                 }
@@ -137,7 +192,7 @@ io.on('connection', (socket) => {
                 delete allusers[roomId];
             }
         }
-        userIdToSocket.delete(socket.id);
+        roomIdToSocket.delete(socket.id);
     });
 
 });

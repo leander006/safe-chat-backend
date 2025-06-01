@@ -2,7 +2,7 @@ const passport = require("passport");
 
 import { Request, Response, NextFunction } from "express";
 
-const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate("jwt", (error: unknown, user: any, data: any) => {
     if (error) next(error);
     if (!user) {
@@ -14,4 +14,3 @@ const authenticate = (req: Request, res: Response, next: NextFunction) => {
     next();
   })(req, res, next);
 };
-module.exports = { authenticate };

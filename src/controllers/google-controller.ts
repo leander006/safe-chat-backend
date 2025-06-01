@@ -17,18 +17,20 @@ export const googleAuthDal = {
     if (isUserExists || emailExists) {
       return isUserExists != null ? isUserExists : emailExists;
     }
+    const randomSeed = Math.random().toString(36).substring(2, 15);
+    let avatarUrl = `https://robohash.org/${randomSeed}.png`;
+    if(!avatarUrl){
+      avatarUrl ="https://res.cloudinary.com/dj-sanghvi-college/image/upload/v1748543403/utw8hnyvr3i_tlg2al.png"
+    }    
     const user = await prismaClient.user.create({ 
       data: {
+        id: oauthUser.id,
         accountId: oauthUser.id,
         username: oauthUser.displayName,
-        name: oauthUser.displayName,
         provider: oauthUser.provider,
         email: oauthUser.emails[0].value,
         status: "Public",
-        profile: {
-            public_id: "siyz73iq0sau89vqebhm",
-            url: "https://res.cloudinary.com/dj-sanghvi-college/image/upload/v1697996657/noProfile_jjyqlm.jpg",
-        },
+        profile:avatarUrl,
         isVerified: JSON.parse(oauthUser._raw).email_verified,
       },
     });
