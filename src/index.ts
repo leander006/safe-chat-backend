@@ -109,14 +109,32 @@ io.on('connection', (socket) => {
 
     socket.on("audio-call",({from ,to, roomId}) => {    
         console.log("Audio call ${to} in room ${roomId} ",to.socketId, roomId );
-        io.to(to.socketId).emit("incoming:audio", {from,roomId});
+        const newUser = { ...from, socketId: socket.id };
+        console.log("New user for audio call: ");
+        io.to(to.socketId).emit("incoming:audio", {from:newUser,roomId});
     });
 
     socket.on("video-call",({from ,to, roomId}) => {  
         console.log("Video call ${to} in room ${roomId} ",to.socketId, roomId );
-        io.to(to.socketId).emit("incoming:video", {from,roomId});
+        const newUser = { ...from, socketId: socket.id };
+        console.log("New user for video call: ");
+        io.to(to.socketId).emit("incoming:video", {from:newUser,roomId});
     });
 
+
+    socket.on('audio-call-accepted',({to,roomId}) =>{
+        console.log("Call accepted by user: ",to.socketId," roomId ",roomId);
+        io.to(to.socketId).emit("outgoing-audio-call-accepted",{roomId});
+    })
+    socket.on('video-call-accepted',({to,roomId}) =>{
+        console.log("Call accepted by user: ",to.socketId," roomId ",roomId);
+        io.to(to.socketId).emit("outgoing-video-call-accepted",{roomId});
+    })
+
+    socket.on('call-rejected',({to}) =>{
+        console.log("Call rejected by user: ",to.socketId);
+        io.to(to.socketId).emit("outgoing-call-rejected");
+    })
     socket.on('join-room', ({username,roomId}) => {
         if(!allusers[roomId]) {
             allusers[roomId] = [];
@@ -150,6 +168,9 @@ io.on('connection', (socket) => {
     })
 
     socket.on('user:leave', ({username,roomId}) => {
+        if(!allusers[roomId]) {
+            return;
+        }
         const index = allusers[roomId].findIndex(user => user.username === username);
         const to = allusers[roomId].find(user => user.username !== username)?.id;
         console.log(`User ${username} left room: ${roomId}`);
