@@ -69,31 +69,20 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    socket.on('user-disconnected', ({user}) => {
-        console.log("User disconnected: ",user.username);
-    })
-
     socket.on('user-login',(user) =>{
-        console.log("User login event received:", user.username);
-        // console.log("users length before checking ",users.length);
         if(!user) {
             return
         }
         if (users.find(u => u.id === user.id)) {
             users = users.filter(u => u.id !== user.id);
         }
-        console.log("users length after checking ",users.length);
         const newUser = { ...user, socketId: socket.id };
-        // console.log("User logged in: ",newUser);
         socket.data.user = newUser;
         users.push(newUser);
-        console.log("users length end ",users.length);
         socket.broadcast.emit("updateUserList", users);
     })
 
     socket.on('get-update',(user) =>{
-        const updatedUsers = users.filter(u => u.id !== user.id);
-        // console.log("Getting updatedUser array", updatedUsers);
         socket.emit("updateUserList", users);
     })
 
@@ -108,14 +97,12 @@ io.on('connection', (socket) => {
     })
 
     socket.on("audio-call",({from ,to, roomId}) => {    
-        console.log("Audio call ${to} in room ${roomId} ",to.socketId, roomId );
         const newUser = { ...from, socketId: socket.id };
         console.log("New user for audio call: ");
         io.to(to.socketId).emit("incoming:audio", {from:newUser,roomId});
     });
 
     socket.on("video-call",({from ,to, roomId}) => {  
-        console.log("Video call ${to} in room ${roomId} ",to.socketId, roomId );
         const newUser = { ...from, socketId: socket.id };
         console.log("New user for video call: ");
         io.to(to.socketId).emit("incoming:video", {from:newUser,roomId});
@@ -123,29 +110,36 @@ io.on('connection', (socket) => {
 
 
     socket.on('audio-call-accepted',({to,roomId}) =>{
-        console.log("Call accepted by user: ",to.socketId," roomId ",roomId);
         io.to(to.socketId).emit("outgoing-audio-call-accepted",{roomId});
     })
     socket.on('video-call-accepted',({to,roomId}) =>{
-        console.log("Call accepted by user: ",to.socketId," roomId ",roomId);
         io.to(to.socketId).emit("outgoing-video-call-accepted",{roomId});
     })
 
     socket.on('call-rejected',({to}) =>{
-        console.log("Call rejected by user: ",to.socketId);
         io.to(to.socketId).emit("outgoing-call-rejected");
+    })
+    socket.on("check-room", ({roomId,username}) => {
+        console.log("Checking availability for room: ",roomId," with username ",username," array size ",allusers[roomId]);
+        if (!allusers[roomId]) {
+            console.log("Room does not exist: ", roomId);
+            return io.to(socket.id).emit('availability-response', { exist: false,roomId});
+        }
+        else if (allusers[roomId].length >= 2) {
+            console.log("Room is full: ", roomId);
+            return io.to(socket.id).emit('availability-response', { exist: false,roomId });
+        }
+        io.to(socket.id).emit('availability-response', { exist: true ,roomId});
     })
     socket.on('join-room', ({username,roomId}) => {
         if(!allusers[roomId]) {
             allusers[roomId] = [];
         }
-        if(allusers[roomId].length >= 2) {
-            return socket.emit('room-full', { message: 'Room is full' });
-        }
         if(!allusers[roomId].find(user => user.username === username)) {
             allusers[roomId].push({username, id: socket.id });
             roomIdToSocket.set(socket.id, roomId);
         }
+        console.log(`User ${username} joined room: ${roomId}, current users:`, allusers[roomId]);
         socket.join(roomId);
         for(const user of allusers[roomId]) {
             if(user.username !== username) {
@@ -173,18 +167,19 @@ io.on('connection', (socket) => {
         }
         const index = allusers[roomId].findIndex(user => user.username === username);
         const to = allusers[roomId].find(user => user.username !== username)?.id;
-        console.log(`User ${username} left room: ${roomId}`);
+        console.log(`User ${username} left room: ${roomId} index: ${index}`);
        if (index !== -1) {
             allusers[roomId].splice(index, 1);
             socket.leave(roomId);
             roomIdToSocket.delete(socket.id);
+            console.log(`User ${username} left room: ${roomId}, remaining users:`, allusers[roomId]);
             if (to) {
                 socket.to(to).emit('user-left', { username, id: socket.id });
             }
         }
-        if (allusers[roomId].length === 0) {
-            delete allusers[roomId];
-        }
+        delete allusers[roomId];
+        roomIdToSocket.delete(socket.id);
+        console.log(allusers[roomId] );
     })
     socket.on('disconnect', () => {
         const users = socket.data.user
@@ -209,9 +204,8 @@ io.on('connection', (socket) => {
                     socket.to(to).emit('user-left', { username, id: socket.id });
                 }
             }
-            if (allusers[roomId].length === 0) {
-                delete allusers[roomId];
-            }
+            delete allusers[roomId];
+            console.log(allusers[roomId] );
         }
         roomIdToSocket.delete(socket.id);
     });
