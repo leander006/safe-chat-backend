@@ -51,7 +51,7 @@ app.get('/', (req, res) => {
 });
   
 const server = app.listen(PORT, () => {    
-      console.log('Server is running on port 3001');
+      console.log('Server is running on port '+PORT);
 })
 
 app.use("/api/auth/google",googleAuthRoute)
@@ -82,7 +82,7 @@ io.on('connection', (socket) => {
         socket.broadcast.emit("updateUserList", users);
     })
 
-    socket.on('get-update',(user) =>{
+    socket.on('get-update',() =>{
         socket.emit("updateUserList", users);
     })
 
