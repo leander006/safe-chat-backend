@@ -1,6 +1,6 @@
 import express from 'express';
 import { Server } from 'socket.io';
-import { JWT_KEY, PORT } from './config/serverConfig';
+import { CLIENT_URL, JWT_KEY, PORT } from './config/serverConfig';
 import googleAuthRoute from './routes/google-auth';
 import userRoute from './routes/user-route';
 import passport from 'passport';
@@ -15,7 +15,7 @@ let onlineUsers: Set<string> = new Set();
 
 app.use(
     cors({
-      origin: ["http://localhost:5173"],
+      origin: [CLIENT_URL],
       methods: ["GET", "POST", "DELETE", "PUT"],
       credentials: true,
     })
@@ -23,12 +23,12 @@ app.use(
 
 app.use(
     session({
-      secret: JWT_KEY || 'default_secret_key', 
+      secret: JWT_KEY , 
       resave: false, // Avoid saving session if not modified
       saveUninitialized: false, // Avoid creating session until something is stored
       cookie: {
-        secure: process.env.NODE_ENV === "production", // Use HTTPS in production
-        maxAge: 1000 * 60 * 60 * 24, // 1 day
+        secure: false, // Use HTTPS in production
+        maxAge: 1000 * 60, // 1 minute
       },
     })
   );

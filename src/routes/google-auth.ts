@@ -7,9 +7,8 @@ import {
   GOOGLE_CALLBACK_URL,
   GOOGLE_CLIENT_SECRET,
   GOOGLE_CLIENT_ID,
-  BASE_URL,
+  CLIENT_URL
 } from "../config/serverConfig";
-import prismaClient from "../config/prisma";
 
 const router = express.Router();
 
@@ -21,8 +20,8 @@ let userProfile: UserProfile | undefined;
 passport.use(
   new GoogleStrategy(
     {
-      clientID: GOOGLE_CLIENT_ID || (() => { throw new Error("GOOGLE_CLIENT_ID is not defined"); })(),
-      clientSecret: GOOGLE_CLIENT_SECRET || (() => { throw new Error("GOOGLE_CLIENT_SECRET is not defined"); })(),
+      clientID: GOOGLE_CLIENT_ID ,
+      clientSecret: GOOGLE_CLIENT_SECRET,
       callbackURL: GOOGLE_CALLBACK_URL,
     },
     (accessToken: string, refreshToken: string, profile: UserProfile, done: Function) => {
@@ -80,7 +79,7 @@ router.get("/success", async (req: Request, res: Response) => {
       sameSite: "strict", 
       maxAge: 24 * 60 * 60 * 1000, 
     });
-    res.redirect(`${BASE_URL}`);
+    res.redirect(`${CLIENT_URL}/room`);
   } catch (error) {
     console.log("Error processing user information:", error);
     res.status(500).send("Error processing user information.");
@@ -96,10 +95,7 @@ router.get("/logout", (req: Request, res: Response) => {
 
 // @ts-ignore
   req.logout();
-  if (!BASE_URL) {
-    throw new Error("BASE_URL is not defined");
-  }
-  res.redirect(BASE_URL);
+  res.redirect(CLIENT_URL);
 });
 
 export default router;
