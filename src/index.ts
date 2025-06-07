@@ -16,7 +16,6 @@ let onlineUsers: Set<string> = new Set();
 app.use(
     cors({
       origin: [CLIENT_URL],
-      methods: ["GET", "POST", "DELETE", "PUT"],
       credentials: true,
     })
   );
@@ -27,7 +26,9 @@ app.use(
       resave: false, // Avoid saving session if not modified
       saveUninitialized: false, // Avoid creating session until something is stored
       cookie: {
-        secure: process.env.NODE_ENV === "production", // Use HTTPS in production
+        secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
+        httpOnly: true, // Prevent access via JavaScript
+        sameSite: 'none', // Allow cross-origin cookies
         maxAge: 1000 * 60 * 60 * 24, // 1 day
       },
     })
@@ -47,7 +48,7 @@ passport.deserializeUser(function (obj, cb) {
 });
 
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.send(`Hello World! ${process.env.NODE_ENV === 'production'}`);
 });
   
 const server = app.listen(PORT, () => {    
@@ -61,7 +62,8 @@ app.use("/api/user",userRoute)
 const io = new Server(server, { 
     cors: { 
         origin: '*', 
-        methods: ['GET', 'POST'] 
+        methods: ['GET', 'POST'] ,
+        credentials: true, // Allow cookies to be sent with requests
     } 
 });
 
