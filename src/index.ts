@@ -24,13 +24,11 @@ app.use(
 app.use(
     session({
       secret: JWT_KEY , 
-      resave: false,
-      saveUninitialized: false,
+      resave: false, // Avoid saving session if not modified
+      saveUninitialized: false, // Avoid creating session until something is stored
       cookie: {
-        secure: true,
-        httpOnly: true, 
-        maxAge: 1000 * 60 * 60 * 24, 
-        sameSite: 'none',
+        secure: process.env.NODE_ENV === "production", // Use HTTPS in production
+        maxAge: 1000 * 60 * 60 * 24, // 1 day
       },
     })
   );
