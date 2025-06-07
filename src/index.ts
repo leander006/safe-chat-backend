@@ -25,12 +25,6 @@ app.use(
       secret: JWT_KEY , 
       resave: false, // Avoid saving session if not modified
       saveUninitialized: false, // Avoid creating session until something is stored
-      cookie: {
-        secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
-        httpOnly: true, // Prevent access via JavaScript
-        sameSite: 'none', // Allow cross-origin cookies
-        maxAge: 1000 * 60 * 60 * 24, // 1 day
-      },
     })
   );
 
