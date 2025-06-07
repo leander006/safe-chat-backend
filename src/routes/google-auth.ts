@@ -71,13 +71,15 @@ router.get("/success", async (req: Request, res: Response) => {
     const token = generateToken(user.id); 
     res.cookie("authToken", token, {
       secure: true,      
-      sameSite: "strict",
+      httpOnly: true,     
+      sameSite: "none",   
       maxAge: 24 * 60 * 60 * 1000, 
     });
     res.cookie("user", JSON.stringify(user), {
       secure: true,       
-      sameSite: "strict", 
-      maxAge: 24 * 60 * 60 * 1000, 
+      httpOnly: true,     
+      sameSite: "none",   
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
     res.redirect(`${CLIENT_URL}/room`);
   } catch (error) {
