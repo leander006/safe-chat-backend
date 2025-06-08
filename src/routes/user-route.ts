@@ -24,18 +24,21 @@ router.get("/me", async (req: Request, res: Response) => {
     });
 });
 
-router.delete("/deleteUser", authenticate, async (req: Request, res: Response) => {
+router.get("/logout", async (req: Request, res: Response) => {
     try {
-        // @ts-ignore
-        const deletedUser = await userDal.deleteUser(req.user.id);
-        res.status(200).json({
-            message: "User deleted successfully",
-            deletedUser,
+
+        res.clearCookie('authToken', {
+            sameSite: 'none',
+            secure: true,
         });
+        res.clearCookie('user', {
+            sameSite: 'none',
+            secure: true,
+        });
+        res.status(200).send({ message: 'Logged out successfully' });
     } catch (error) {
-        console.error("Error deleting user:", error);
         res.status(500).json({
-            error: error,
+            error
         });
     }
 })
