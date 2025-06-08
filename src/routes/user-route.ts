@@ -16,7 +16,6 @@ router.get("/me", async (req: Request, res: Response) => {
         const cookieParts = header.split('=');
         if (cookieParts[0] === 'user') {
             user = decodeURIComponent(cookieParts[1]);
-            console.log("User details:", JSON.parse(user));
             break;
         }
     }
