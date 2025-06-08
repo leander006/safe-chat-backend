@@ -10,8 +10,6 @@ import cors from 'cors'
 const app = express();
 const allusers: { [key: string]: { username: string; id: string }[] } = {};
 let users: any[] = [];
-const roomIdToSocket = new Map();
-let onlineUsers: Set<string> = new Set();
 
 app.use(
     cors({
@@ -23,8 +21,8 @@ app.use(
 app.use(
     session({
       secret: JWT_KEY , 
-      resave: false, // Avoid saving session if not modified
-      saveUninitialized: false, // Avoid creating session until something is stored
+      resave: false, 
+      saveUninitialized: false,
     })
   );
 
@@ -36,8 +34,7 @@ passport.serializeUser(function (user, cb) {
   cb(null, user);
 });
 
-passport.deserializeUser(function (obj, cb) {
-// @ts-ignore
+passport.deserializeUser(function (obj:any, cb) {
   cb(null, obj);
 });
 
@@ -55,9 +52,7 @@ app.use("/api/auth/user",userRoute)
 
 const io = new Server(server, { 
     cors: { 
-        origin: '*', 
-        methods: ['GET', 'POST'] ,
-        credentials: true, // Allow cookies to be sent with requests
+        origin: CLIENT_URL  
     } 
 });
 
@@ -88,7 +83,6 @@ io.on('connection', (socket) => {
             return
         }
         users = users.filter(u => u.id !== user.id);
-        onlineUsers.delete(socket.id);
         socket.broadcast.emit("updateUserList", users);
     })
 
@@ -115,14 +109,11 @@ io.on('connection', (socket) => {
     socket.on('call-rejected',({to}) =>{
         io.to(to.socketId).emit("outgoing-call-rejected");
     })
-    socket.on("check-room", ({roomId,username}) => {
-        console.log("Checking availability for room: ",roomId," with username ",username," array size ",allusers[roomId]);
+    socket.on("check-room", ({roomId}) => {
         if (!allusers[roomId]) {
-            console.log("Room does not exist: ", roomId);
             return io.to(socket.id).emit('availability-response', { exist: false,roomId});
         }
         else if (allusers[roomId].length >= 2) {
-            console.log("Room is full: ", roomId);
             return io.to(socket.id).emit('availability-response', { exist: false,roomId });
         }
         io.to(socket.id).emit('availability-response', { exist: true ,roomId});
@@ -133,9 +124,8 @@ io.on('connection', (socket) => {
         }
         if(!allusers[roomId].find(user => user.username === username)) {
             allusers[roomId].push({username, id: socket.id });
-            roomIdToSocket.set(socket.id, roomId);
+            socket.data.roomId = roomId;
         }
-        console.log(`User ${username} joined room: ${roomId}, current users:`, allusers[roomId]);
         socket.join(roomId);
         for(const user of allusers[roomId]) {
             if(user.username !== username) {
@@ -167,24 +157,24 @@ io.on('connection', (socket) => {
        if (index !== -1) {
             allusers[roomId].splice(index, 1);
             socket.leave(roomId);
-            roomIdToSocket.delete(socket.id);
+            socket.data.roomId = null;
             console.log(`User ${username} left room: ${roomId}, remaining users:`, allusers[roomId]);
             if (to) {
                 socket.to(to).emit('user-left', { username, id: socket.id });
             }
         }
         delete allusers[roomId];
-        roomIdToSocket.delete(socket.id);
-        console.log(allusers[roomId] );
+        socket.data.roomId = null;
     })
     socket.on('disconnect', () => {
+        console.log(`User disconnected: ${socket.id}`);
+        
         const users = socket.data.user
-        onlineUsers.delete(socket.id);
         if (!users) {
             return;
         }
-        const roomId = roomIdToSocket.get(socket.id);
-        if(!allusers[roomId]) {
+        const roomId = socket.data.roomId;
+        if(roomId == null || !allusers[roomId]) {
             return
         }        
         const username=allusers[roomId].find(user => user.id === socket.id)?.username;
@@ -195,15 +185,14 @@ io.on('connection', (socket) => {
             if (index !== -1) {
                 allusers[roomId].splice(index, 1);
                 socket.leave(roomId);
-                roomIdToSocket.delete(socket.id);
+                socket.data.roomId = null;
                 if (to) {
                     socket.to(to).emit('user-left', { username, id: socket.id });
                 }
             }
             delete allusers[roomId];
-            console.log(allusers[roomId] );
         }
-        roomIdToSocket.delete(socket.id);
+        socket.data.roomId = null;
     });
 
 });
