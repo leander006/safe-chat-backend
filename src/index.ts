@@ -15,7 +15,7 @@ let onlineUsers: Set<string> = new Set();
 
 app.use(
     cors({
-      origin: [CLIENT_URL],
+      origin: CLIENT_URL,
       credentials: true,
     })
   );
