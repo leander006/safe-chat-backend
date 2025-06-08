@@ -70,14 +70,12 @@ router.get("/success", async (req: Request, res: Response) => {
 
     const token = generateToken(user.id); 
     res.cookie("authToken", token, {
-      secure: true,      
-      httpOnly: false,     
-      sameSite: "none",   
+      sameSite: "none",
+      secure: true,       
       maxAge: 24 * 60 * 60 * 1000, 
     });
     res.cookie("user", JSON.stringify(user), {
       secure: true,       
-      httpOnly: false,     
       sameSite: "none",   
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });

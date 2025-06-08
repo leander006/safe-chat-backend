@@ -50,7 +50,7 @@ const server = app.listen(PORT, () => {
 })
 
 app.use("/api/auth/google",googleAuthRoute)
-app.use("/api/user",userRoute)
+app.use("/api/auth/user",userRoute)
 
 
 const io = new Server(server, { 

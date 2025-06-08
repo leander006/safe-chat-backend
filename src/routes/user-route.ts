@@ -3,12 +3,12 @@ import {userDal} from "../controllers/user-controller";
 import {authenticate} from "../config/authenticate";
 const router = express.Router();
 
-router.get("/allUsers", authenticate, async (req: Request, res: Response) => {
-    // @ts-ignore
-    const updatedUser = await userDal.getOnlineUsers(req?.user?.id);
-    console.log("Updated user online status:", updatedUser);
+router.get("/me", async (req: Request, res: Response) => {
+    const token = req.cookies;
+    
+    console.log("User details requested:", token);
     res.status(200).json({
-        updatedUser,
+        user:token,
     });
 });
 
