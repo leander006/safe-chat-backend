@@ -4,11 +4,24 @@ import {authenticate} from "../config/authenticate";
 const router = express.Router();
 
 router.get("/me", async (req: Request, res: Response) => {
-    const token = req.cookies;
-    
-    console.log("User details requested:", token);
+    const rawHeaders = req.headers.cookie ? req.headers.cookie.split('; ') : [];
+    let user = "";
+    if (!rawHeaders.some(header => header.startsWith('user=')) || !rawHeaders.some(header => header.startsWith('authToken='))) {
+        res.status(200).json({
+            message: "No cookies found",
+        });
+        return;
+    }    
+    for (const header of rawHeaders) {
+        const cookieParts = header.split('=');
+        if (cookieParts[0] === 'user') {
+            user = decodeURIComponent(cookieParts[1]);
+            console.log("User details:", JSON.parse(user));
+            break;
+        }
+    }
     res.status(200).json({
-        user:token,
+        user:JSON.parse(user),
     });
 });
 
